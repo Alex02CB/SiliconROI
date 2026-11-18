@@ -1,0 +1,63 @@
+version: 2
+
+sources:
+  - name: catalogo
+    description: >
+      Catálogo de componentes de sobremesa que se venden nuevos hoy: especificaciones
+      de ficha de fabricante y puntuación monohilo estimada. CSV cargados en Bronze
+      tal cual, con las unidades y formatos de origen.
+    database: "{{ env_var('DBT_BRONZE_DB') }}"
+    schema: catalogo
+
+    tables:
+      - name: cpus
+        description: Una fila por CPU. Las columnas con unidades ("5.1 GHz", "65W") se limpian en Silver.
+        columns:
+          - name: cpu_nombre
+            description: Nombre comercial completo. Clave de negocio.
+            data_tests:
+              - unique
+              - not_null
+          - name: fuente
+            description: Procedencia del dato.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['ficha_fabricante', 'estimado', 'verificado']
+
+      - name: gpus
+        description: Una fila por GPU. VRAM, ancho de banda y consumo llegan como texto con unidades.
+        columns:
+          - name: gpu_nombre
+            description: Nombre comercial completo. Clave de negocio.
+            data_tests:
+              - unique
+              - not_null
+
+      - name: ram_kits
+        description: Una fila por kit de RAM. La latencia llega como "CL-tRCD-tRP-tRAS".
+        columns:
+          - name: ram_kit_nombre
+            description: Nombre comercial completo. Clave de negocio.
+            data_tests:
+              - unique
+              - not_null
+          - name: tipo
+            description: Generación de memoria.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['DDR4', 'DDR5']
+
+      - name: cpu_monohilo
+        description: Puntuación monohilo estimada en la escala de Geekbench 6. Una fila por CPU.
+        columns:
+          - name: cpu_nombre
+            description: CPU a la que pertenece la puntuación.
+            data_tests:
+              - unique
+              - not_null
+              - relationships:
+                  arguments:
+                    to: source('catalogo', 'cpus')
+                    field: cpu_nombre
