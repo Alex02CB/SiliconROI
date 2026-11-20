@@ -11,10 +11,6 @@
 
 -- =============================================================================
 
-
-
-
-
 -- =============================================================================
 -- slv_blender_opendata__benchmark_runs
 -- =============================================================================
@@ -46,9 +42,9 @@ with submissions as (
     -- no se pueden comparar con la v4. Siguen en Bronze por si hicieran falta.
     where schema_version = 'v4'
     {% if is_incremental() %}
-    -- Solo envíos recientes, con 3 días de margen para envíos publicados tarde
+    -- Solo envíos recientes, con 7 días de margen para envíos publicados tarde
       and created_at >= (
-          select dateadd(day, -3, max(created_at)) from {{ this }}
+          select dateadd(day, -7, max(created_at)) from {{ this }}
       )
     {% endif %}
 ),
@@ -89,7 +85,6 @@ scenes as (
        , lateral flatten(input => s.benchmark_data) f                -- "para cada envío s, recorre su lista de escenas"
 ),
 
-
 -- -----------------------------------------------------------------------------
 -- PASO 3 · Deduplicar: una sola fila por envío y escena
 -- -----------------------------------------------------------------------------
@@ -106,7 +101,6 @@ deduplicated as (
         order by snapshot_date desc, loaded_at desc   -- la más reciente primero
     ) = 1                                             -- nos quedamos solo con esa
 ),
-
 
 -- -----------------------------------------------------------------------------
 -- PASO 4 · Resultado final con su clave única
