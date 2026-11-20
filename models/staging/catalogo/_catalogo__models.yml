@@ -1,0 +1,112 @@
+version: 2
+
+models:
+  - name: stg_catalogo__cpus
+    description: CPUs del catálogo con las columnas renombradas al inglés. Una fila por CPU.
+    columns:
+      - name: cpu_name
+        description: Nombre comercial completo. Clave de negocio.
+      - name: manufacturer
+        description: Fabricante (AMD, Intel).
+      - name: product_family
+        description: Familia o generación (Ryzen 7000, Core 14th Gen...).
+      - name: launch_date
+        description: Fecha de lanzamiento.
+      - name: cores
+        description: Núcleos como texto; en Intel incluye el reparto ("14 (6P+8E)").
+      - name: threads
+        description: Número de hilos.
+      - name: base_clock
+        description: Frecuencia base como texto ("3.8 GHz").
+      - name: boost_clock
+        description: Frecuencia máxima como texto ("Up to 5.1 GHz").
+      - name: l3_cache
+        description: Caché L3 como texto ("32 MB").
+      - name: tdp
+        description: Consumo térmico de diseño como texto ("65W", "125 W").
+      - name: socket
+        description: Socket de la placa base (AM4, AM5, LGA1700, LGA1851).
+      - name: supported_memory
+        description: Tipos y velocidades de memoria admitidos, como texto.
+      - name: integrated_graphics
+        description: Nombre de la gráfica integrada, o "No" si no tiene.
+      - name: launch_price_usd
+        description: Precio oficial de lanzamiento en dólares.
+      - name: data_source
+        description: Procedencia del dato (ficha_fabricante, estimado, verificado).
+      - name: captured_at
+        description: Fecha en que se capturó el dato.
+      - name: loaded_at
+        description: Momento en que la fila llegó a Bronze.
+
+  - name: stg_catalogo__gpus
+    description: GPUs del catálogo con las columnas renombradas al inglés. Una fila por GPU.
+    columns:
+      - name: gpu_name
+        description: Nombre comercial completo. Clave de negocio.
+      - name: manufacturer
+        description: Fabricante (NVIDIA, AMD, Intel).
+      - name: architecture
+        description: Arquitectura de la GPU (Ada Lovelace, RDNA 4...).
+      - name: launch_date
+        description: Fecha de lanzamiento.
+      - name: memory
+        description: VRAM y tipo de memoria como texto ("16 GB GDDR6").
+      - name: memory_bus
+        description: Ancho del bus de memoria como texto ("256-bit").
+      - name: memory_bandwidth
+        description: Ancho de banda de memoria como texto ("640 GB/s").
+      - name: tdp
+        description: Consumo como texto ("304 W").
+      - name: launch_price_usd
+        description: Precio oficial de lanzamiento en dólares.
+      - name: data_source
+        description: Procedencia del dato.
+      - name: captured_at
+        description: Fecha en que se capturó el dato.
+      - name: loaded_at
+        description: Momento en que la fila llegó a Bronze.
+
+  - name: stg_catalogo__ram_kits
+    description: Kits de RAM del catálogo con las columnas renombradas al inglés. Una fila por kit.
+    columns:
+      - name: ram_kit_name
+        description: Nombre comercial completo. Clave de negocio.
+      - name: manufacturer
+        description: Fabricante (Kingston, Corsair, G.Skill).
+      - name: memory_type
+        description: Generación de memoria (DDR4, DDR5).
+      - name: speed
+        description: Velocidad como texto ("DDR5-6000").
+      - name: timings
+        description: Latencias como texto ("30-36-36-96"); el primer valor es la CL.
+      - name: kit_configuration
+        description: Número y capacidad de módulos como texto ("2x16GB").
+      - name: voltage
+        description: Voltaje como texto ("1.35V", "1.35 V").
+      - name: reference_price_usd
+        description: Precio de referencia en dólares.
+      - name: reference_price_date
+        description: Fecha del precio de referencia.
+      - name: data_source
+        description: Procedencia del dato.
+      - name: captured_at
+        description: Fecha en que se capturó el dato.
+      - name: loaded_at
+        description: Momento en que la fila llegó a Bronze.
+
+  - name: stg_catalogo__cpu_monohilo
+    description: Puntuación monohilo estimada por CPU, renombrada al inglés.
+    columns:
+      - name: cpu_name
+        description: CPU a la que pertenece la puntuación.
+      - name: benchmark_name
+        description: Benchmark de referencia (Geekbench 6).
+      - name: single_thread_score
+        description: Puntuación monohilo estimada.
+      - name: data_source
+        description: Procedencia del dato.
+      - name: captured_at
+        description: Fecha en que se capturó el dato.
+      - name: loaded_at
+        description: Momento en que la fila llegó a Bronze.

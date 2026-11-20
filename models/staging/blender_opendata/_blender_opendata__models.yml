@@ -1,0 +1,36 @@
+version: 2
+
+models:
+  - name: stg_blender_opendata__submissions
+    description: >
+      Envíos de Blender Open Data con los campos de primer nivel extraídos y tipados.
+      Una fila por línea de Bronze; incluye todas las versiones de esquema.
+    columns:
+      - name: submission_id
+        description: Identificador del envío en Blender Open Data. Se repite entre snapshots.
+        data_tests:
+          - not_null
+      - name: schema_version
+        description: Versión del formato del envío. Solo v4 es comparable con el hardware actual.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['v1', 'v2', 'v3', 'v4']
+              config:
+                severity: warn
+      - name: created_at
+        description: Momento en que el usuario subió el envío a Blender Open Data, con zona horaria.
+      - name: benchmark_data
+        description: >
+          Resultados del envío en JSON (VARIANT). Objeto en v1 y lista de escenas en v3 y v4.
+          Se desempaqueta en Silver.
+      - name: snapshot_date
+        description: Fecha del snapshot de origen, extraída del nombre del fichero.
+        data_tests:
+          - not_null
+      - name: source_file
+        description: Parte del snapshot de la que procede la fila.
+      - name: source_row
+        description: Número de línea dentro de esa parte.
+      - name: loaded_at
+        description: Momento en que la fila llegó a Bronze.
