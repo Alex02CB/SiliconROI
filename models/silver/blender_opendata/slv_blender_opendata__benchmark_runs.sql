@@ -1,10 +1,23 @@
+-- ============================ INCREMENTAL ====================================
+
+{{
+    config(
+        materialized='incremental',
+        incremental_strategy='merge',
+        unique_key='run_id',
+        on_schema_change='fail'
+    )
+}}
+
+-- =============================================================================
+
+
+
+
+
 -- =============================================================================
 -- slv_blender_opendata__benchmark_runs
 -- =============================================================================
--- Capa Silver: una fila por envío y escena, solo esquema v4.
---   1. Filtra la v4: es la única comparable con el hardware actual.
---   2. FLATTEN: desempaqueta las escenas de cada envío.
---   3. Deduplica: si un envío llega en varios snapshots, se queda el más reciente.
 
 -- =============================================================================
 -- Hacemos una limpieza en la que nos quedamos con la v4, desempaquetamos cada envío
@@ -12,6 +25,14 @@
 -- envío y escena que llegan en distintos snapshots, quedándonos con la más reciente,
 -- y finalmente creamos una clave única, run_id, uniendo submission_id y
 -- scene_name con __ entre medias.
+-- =============================================================================
+
+-- Capa Silver: una fila por envío y escena, solo esquema v4.
+--   1. Filtra la v4: es la única comparable con el hardware actual.
+--   2. FLATTEN: desempaqueta las escenas de cada envío.
+--   3. Deduplica: si un envío llega en varios snapshots, se queda el más reciente.
+--   4. Incremental (merge por run_id): solo procesa envíos de los últimos 3 días
+--      respecto al último cargado. Ver el filtro en el PASO 1.
 
 -- -----------------------------------------------------------------------------
 -- PASO 1 · Leer Staging y quedarnos solo con la v4
@@ -24,6 +45,12 @@ with submissions as (
     -- v1, v2 y v3 miden otra cosa (tiempo de render, escenas antiguas):
     -- no se pueden comparar con la v4. Siguen en Bronze por si hicieran falta.
     where schema_version = 'v4'
+    {% if is_incremental() %}
+    -- Solo envíos recientes, con 3 días de margen para envíos publicados tarde
+      and created_at >= (
+          select dateadd(day, -3, max(created_at)) from {{ this }}
+      )
+    {% endif %}
 ),
 
 
@@ -64,7 +91,7 @@ scenes as (
 
 
 -- -----------------------------------------------------------------------------
--- PASO 3 · Deduplicar: una sola fila por envío y escena ()
+-- PASO 3 · Deduplicar: una sola fila por envío y escena
 -- -----------------------------------------------------------------------------
 -- Cada snapshot de Blender trae otra vez todo el histórico. Al cargar un
 -- segundo snapshot, la misma pareja envío + escena aparecería dos veces.
