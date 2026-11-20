@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: slv_blender_opendata__benchmark_runs
+    description: >
+      Ejecuciones del benchmark de Blender (esquema v4), una fila por envío y escena,
+      deduplicadas entre snapshots. Incluye envíos incompletos y equipos con varias
+      GPUs: se filtran en Gold.
+    columns:
+      - name: run_id
+        description: Clave única de la fila, envío + escena.
+        data_tests:
+          - unique
+          - not_null
+      - name: submission_id
+        description: Identificador del envío en Blender Open Data.
+        data_tests:
+          - not_null
+      - name: scene_name
+        description: Escena renderizada.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['monster', 'junkshop', 'classroom']
+              config:
+                severity: warn
+      - name: device_type
+        description: Tipo de cálculo (CPU, OPTIX, CUDA, HIP, ONEAPI, METAL).
+        data_tests:
+          - not_null
+      - name: device_name_raw
+        description: Nombre del componente tal como lo registra Blender, sin limpiar.
+        data_tests:
+          - not_null
+      - name: num_compute_devices
+        description: Número de dispositivos usados. Si es mayor que 1, la puntuación no es comparable.
+      - name: blender_version
+        description: Versión de Blender del benchmark.
+        data_tests:
+          - not_null
+      - name: samples_per_minute
+        description: Puntuación de la escena en muestras por minuto. Más es mejor.
+        data_tests:
+          - not_null
+      - name: run_at
+        description: Momento en que se ejecutó la escena.
+      - name: created_at
+        description: Momento en que se subió el envío.
+      - name: snapshot_date
+        description: Snapshot del que procede la fila.
+      - name: loaded_at
+        description: Momento en que la fila llegó a Bronze.

@@ -5,10 +5,13 @@
 --   1. Filtra la v4: es la única comparable con el hardware actual.
 --   2. FLATTEN: desempaqueta las escenas de cada envío.
 --   3. Deduplica: si un envío llega en varios snapshots, se queda el más reciente.
--- Los envíos incompletos y los equipos con varias GPUs NO se descartan aquí:
--- se filtran en Gold, al calcular la puntuación. Silver no pierde información.
--- =============================================================================
 
+-- =============================================================================
+-- Hacemos una limpieza en la que nos quedamos con la v4, desempaquetamos cada envío
+-- en una fila por escena con el FLATTEN, eliminamos las copias repetidas de un mismo
+-- envío y escena que llegan en distintos snapshots, quedándonos con la más reciente,
+-- y finalmente creamos una clave única, run_id, uniendo submission_id y
+-- scene_name con __ entre medias.
 
 -- -----------------------------------------------------------------------------
 -- PASO 1 · Leer Staging y quedarnos solo con la v4
@@ -61,7 +64,7 @@ scenes as (
 
 
 -- -----------------------------------------------------------------------------
--- PASO 3 · Deduplicar: una sola fila por envío y escena
+-- PASO 3 · Deduplicar: una sola fila por envío y escena ()
 -- -----------------------------------------------------------------------------
 -- Cada snapshot de Blender trae otra vez todo el histórico. Al cargar un
 -- segundo snapshot, la misma pareja envío + escena aparecería dos veces.
