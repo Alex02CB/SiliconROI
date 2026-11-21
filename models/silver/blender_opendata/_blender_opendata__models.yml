@@ -50,3 +50,16 @@ models:
         description: Snapshot del que procede la fila.
       - name: loaded_at
         description: Momento en que la fila llegó a Bronze.
+      - name: device_name
+        description: >
+          Nombre del dispositivo limpio para mostrar (macro clean_device_name):
+          sin (R), (TM), generación de Intel ni coletillas del sistema.
+        data_tests:
+          - not_null
+
+      - name: device_key
+        description: >
+          device_name en minúsculas: clave para cruzar con el catálogo y con el
+          seed mapeo_dispositivos_blender.
+        data_tests:
+          - not_null

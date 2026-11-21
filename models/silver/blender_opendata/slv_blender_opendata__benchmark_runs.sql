@@ -103,14 +103,18 @@ deduplicated as (
 ),
 
 -- -----------------------------------------------------------------------------
--- PASO 4 · Resultado final con su clave única
+-- PASO 4 · Resultado final con su clave única y el nombre limpio
 -- -----------------------------------------------------------------------------
 -- run_id identifica cada fila: envío + escena (p. ej. "abc123__monster").
--- Será la clave con la que el modelo incremental sabrá qué filas ya tiene.
+-- device_name: nombre limpio para mostrar; device_key: el mismo en minúsculas,
+-- para cruzar con el catálogo y el seed (macro clean_device_name).
+-- Si la macro cambia, este modelo necesita --full-refresh.
 final as (
     select
-          submission_id || '__' || scene_name   as run_id
+          submission_id || '__' || scene_name                          as run_id
         , *
+        , {{ clean_device_name('device_name_raw') }}                   as device_name
+        , {{ clean_device_name('device_name_raw', as_key=true) }}      as device_key
     from deduplicated
 )
 
