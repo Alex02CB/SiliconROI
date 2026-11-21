@@ -1,0 +1,54 @@
+version: 2
+
+seeds:
+  - name: mapeo_dispositivos_blender
+    description: >
+      Excepciones al cruce entre Blender y el catálogo: casos que la macro
+      clean_device_name no puede resolver porque Blender y el catálogo describen
+      el producto con distinto detalle. Una fila de Blender puede apuntar a
+      varios productos (variantes de memoria) y varias filas de Blender pueden
+      apuntar al mismo producto (versiones F/KF de Intel). Se mantiene a mano.
+    columns:
+      - name: blender_device_key
+        description: >
+          Nombre del dispositivo en Blender, ya normalizado con
+          clean_device_name(..., as_key=true).
+        data_tests:
+          - not_null
+
+      - name: product_name
+        description: Nombre exacto del producto en el catálogo.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_catalogo__gpus')
+                field: gpu_name
+              config:
+                where: "device_kind = 'gpu'"
+          - relationships:
+              arguments:
+                to: ref('stg_catalogo__cpus')
+                field: cpu_name
+              config:
+                where: "device_kind = 'cpu'"
+
+      - name: device_kind
+        description: Tipo de componente, para saber contra qué tabla del catálogo cruzar.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['cpu', 'gpu']
+
+      - name: motivo
+        description: >
+          Por qué existe la fila. variante_memoria: Blender no distingue la
+          memoria de la GPU y su rendimiento vale para todas las variantes.
+          sin_graficos_integrados: versión F/KF de Intel, mismo rendimiento que
+          la versión con gráfica.
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['variante_memoria', 'sin_graficos_integrados']
