@@ -62,3 +62,12 @@ seeds:
   siliconroi:
     +database: "{{ env_var('DBT_SILVER_DB') }}"
     +schema: seeds
+
+
+# =============================================================================
+# Variables del proyecto
+# Parámetros que usan las macros. Se cambian aquí y afectan a todo el proyecto.
+# =============================================================================
+vars:
+  # Tipo de cambio de referencia (1 USD = X EUR). Lo usa la macro usd_to_eur.
+  usd_eur_rate: 0.86
