@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_precios__daily_prices
+    description: Precios diarios por tienda, renombrados al inglés. 1:1 con Bronze.
+    columns:
+      - name: price_date
+        description: Día del precio.
+      - name: store_name
+        description: Nombre de la tienda.
+      - name: product_name
+        description: Nombre del producto, igual que en el catálogo.
+      - name: product_type
+        description: cpu, gpu o ram.
+      - name: retail_price_eur
+        description: Precio de venta al público en euros, con IVA.
+      - name: currency
+        description: Moneda del precio.
+      - name: in_stock
+        description: Si el producto estaba disponible ese día.
+      - name: data_source
+        description: Origen del dato (simulador_precios).
+      - name: loaded_at
+        description: Momento de la escritura en Bronze.

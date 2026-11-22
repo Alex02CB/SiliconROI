@@ -52,3 +52,20 @@ seeds:
           - accepted_values:
               arguments:
                 values: ['variante_memoria', 'sin_graficos_integrados']
+  - name: tiendas
+    description: >
+      Tiendas de las que se registran precios. Datos de referencia mantenidos a
+      mano. Los precios son simulados (D-11): los nombres de tiendas reales se
+      usan solo como referencia.
+    columns:
+      - name: store_name
+        description: Nombre de la tienda, tal como aparece en los precios.
+        data_tests: [unique, not_null]
+      - name: store_type
+        description: especialista (tienda de informática) o marketplace.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['especialista', 'marketplace']
+      - name: headquarters_country
+        description: País de la sede de la empresa.

@@ -1,0 +1,72 @@
+version: 2
+
+models:
+  - name: slv_precios__daily_prices
+    description: >
+      Precios diarios por tienda y producto, con y sin IVA. Incremental con
+      merge por price_id, filtrando por loaded_at: cada carga de Bronze solo
+      trae precios nuevos o regenerados. Base de fct_daily_prices en Gold.
+    columns:
+      - name: price_id
+        description: Clave única, día + tienda + producto.
+        data_tests: [unique, not_null]
+
+      - name: price_date
+        description: Día del precio.
+        data_tests: [not_null]
+
+      - name: store_name
+        description: Nombre de la tienda.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('tiendas')
+                field: store_name
+
+      - name: product_name
+        description: Nombre del producto, igual que en el catálogo.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_catalogo__cpus')
+                field: cpu_name
+              config:
+                where: "product_type = 'cpu'"
+          - relationships:
+              arguments:
+                to: ref('slv_catalogo__gpus')
+                field: gpu_name
+              config:
+                where: "product_type = 'gpu'"
+          - relationships:
+              arguments:
+                to: ref('slv_catalogo__ram_kits')
+                field: ram_kit_name
+              config:
+                where: "product_type = 'ram'"
+
+      - name: product_type
+        description: cpu, gpu o ram.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['cpu', 'gpu', 'ram']
+
+      - name: retail_price_eur
+        description: Precio de venta al público en euros, con IVA, como lo publica la tienda.
+        data_tests: [not_null]
+
+      - name: price_ex_vat_eur
+        description: Precio en euros sin IVA (D-06), calculado con la variable vat_rate.
+        data_tests: [not_null]
+
+      - name: in_stock
+        description: Si el producto estaba disponible ese día.
+      - name: currency
+        description: Moneda del precio.
+      - name: data_source
+        description: Origen del dato (simulador_precios).
+      - name: loaded_at
+        description: Momento de la escritura en Bronze. Marca de agua del incremental.

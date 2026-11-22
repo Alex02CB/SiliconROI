@@ -32,6 +32,8 @@ models:
         +schema: blender_opendata
       catalogo:
         +schema: catalogo
+      precios:
+        +schema: precios
 
     # Silver: limpieza, deduplicación y FLATTEN. Tablas: es trabajo caro y
     # no queremos repetirlo en cada consulta.
@@ -42,6 +44,8 @@ models:
         +schema: blender_opendata
       catalogo:
         +schema: catalogo
+      precios:
+        +schema: precios
 
     # Gold: consumo. int_ (apoyo), dim_ y fct_ (estrella), agg_ (marts).
     gold:
@@ -71,3 +75,5 @@ seeds:
 vars:
   # Tipo de cambio de referencia (1 USD = X EUR). Lo usa la macro usd_to_eur.
   usd_eur_rate: 0.86
+  # IVA general en España. Silver lo quita de los precios de tienda (D-06).
+  vat_rate: 0.21

@@ -1,0 +1,49 @@
+version: 2
+
+sources:
+  - name: precios
+    description: >
+      Precios diarios por tienda en Bronze, escritos cada noche a las 23:00 por
+      la task del simulador de precios (D-11). Precios con IVA, como los
+      publica la tienda.
+    database: "{{ env_var('DBT_BRONZE_DB') }}"
+    schema: precios
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: {count: 24, period: hour}
+        error_after: {count: 48, period: hour}
+    tables:
+      - name: precios_diarios
+        description: Una fila por día, tienda y producto.
+        columns:
+          - name: fecha
+            description: Día del precio.
+            data_tests: [not_null]
+          - name: tienda
+            description: Nombre de la tienda.
+            data_tests: [not_null]
+          - name: producto
+            description: Nombre del producto, igual que en el catálogo.
+            data_tests: [not_null]
+          - name: tipo_producto
+            description: cpu, gpu o ram.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['cpu', 'gpu', 'ram']
+          - name: precio_pvp
+            description: Precio de venta al público, con IVA.
+            data_tests: [not_null]
+          - name: moneda
+            description: Moneda del precio.
+            data_tests:
+              - accepted_values:
+                  arguments:
+                    values: ['EUR']
+          - name: en_stock
+            description: Si el producto estaba disponible ese día.
+          - name: fuente
+            description: Origen del dato (simulador_precios).
+          - name: _loaded_at
+            description: Momento de la escritura en Bronze.
