@@ -1,0 +1,178 @@
+version: 2
+
+models:
+  - name: slv_catalogo__cpus
+    description: >
+      Una fila por CPU del catálogo, con los valores convertidos a número, el
+      precio en euros sin IVA y la puntuación monohilo. Es la base de
+      dim_products para las CPUs.
+    columns:
+      - name: cpu_name
+        description: Nombre oficial del producto.
+        data_tests: [unique, not_null]
+      - name: device_key
+        description: Nombre en minúsculas (clean_device_name, as_key=true) para cruzar con Blender.
+        data_tests: [unique, not_null]
+      - name: manufacturer
+        description: Fabricante (AMD, Intel).
+      - name: product_family
+        description: Familia o generación (Ryzen 7000, Core 13th Gen…).
+      - name: launch_date
+        description: Fecha de lanzamiento.
+      - name: cores
+        description: Núcleos totales.
+        data_tests: [not_null]
+      - name: p_cores
+        description: Núcleos de rendimiento. En AMD, igual que cores.
+      - name: e_cores
+        description: Núcleos de eficiencia. En AMD, 0.
+      - name: threads
+        description: Hilos.
+        data_tests: [not_null]
+      - name: base_clock_ghz
+        description: Frecuencia base en GHz (núcleos P en Intel).
+        data_tests: [not_null]
+      - name: boost_clock_ghz
+        description: Frecuencia máxima en GHz.
+        data_tests: [not_null]
+      - name: l3_cache_mb
+        description: Caché L3 en MB.
+        data_tests: [not_null]
+      - name: tdp_w
+        description: Consumo de referencia en vatios.
+        data_tests: [not_null]
+      - name: socket
+        description: Socket de la placa base.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['AM4', 'AM5', 'LGA1700', 'LGA1851']
+      - name: supports_ddr4
+        description: Admite memoria DDR4.
+      - name: supports_ddr5
+        description: Admite memoria DDR5.
+      - name: max_ddr4_mts
+        description: Velocidad máxima oficial de DDR4 en MT/s (null si no admite DDR4).
+      - name: max_ddr5_mts
+        description: Velocidad máxima oficial de DDR5 en MT/s (null si no admite DDR5).
+      - name: has_integrated_graphics
+        description: Tiene gráfica integrada.
+      - name: integrated_graphics_name
+        description: Nombre de la gráfica integrada (null si no tiene).
+      - name: launch_price_usd
+        description: Precio de lanzamiento en dólares, sin impuestos.
+      - name: launch_price_eur
+        description: Precio de lanzamiento en euros sin IVA (usd_to_eur).
+        data_tests: [not_null]
+      - name: single_thread_score
+        description: Puntuación monohilo (Geekbench 6).
+        data_tests: [not_null]
+      - name: single_thread_benchmark
+        description: Benchmark de la puntuación monohilo.
+      - name: single_thread_source
+        description: Origen de la puntuación monohilo (estimado, verificado…).
+      - name: data_source
+        description: Origen de las especificaciones (ficha_fabricante…).
+      - name: captured_at
+        description: Fecha en que se capturó la fila.
+      - name: loaded_at
+        description: Momento de la carga en Bronze.
+
+  - name: slv_catalogo__gpus
+    description: >
+      Una fila por GPU del catálogo, con los valores convertidos a número y el
+      precio en euros sin IVA. Es la base de dim_products para las GPUs.
+    columns:
+      - name: gpu_name
+        description: Nombre oficial del producto.
+        data_tests: [unique, not_null]
+      - name: device_key
+        description: Nombre en minúsculas (clean_device_name, as_key=true) para cruzar con Blender.
+        data_tests: [unique, not_null]
+      - name: manufacturer
+        description: Fabricante (NVIDIA, AMD, Intel).
+      - name: architecture
+        description: Arquitectura (Ampere, Ada Lovelace, RDNA 3…).
+      - name: launch_date
+        description: Fecha de lanzamiento.
+      - name: vram_gb
+        description: Memoria de vídeo en GB. Umbral de los perfiles (D-04).
+        data_tests: [not_null]
+      - name: memory_type
+        description: Tipo de memoria de vídeo.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['GDDR6', 'GDDR6X', 'GDDR7']
+      - name: memory_bus_bits
+        description: Ancho del bus de memoria en bits.
+        data_tests: [not_null]
+      - name: memory_bandwidth_gbs
+        description: Ancho de banda de memoria en GB/s.
+        data_tests: [not_null]
+      - name: tdp_w
+        description: Consumo de referencia en vatios.
+        data_tests: [not_null]
+      - name: launch_price_usd
+        description: Precio de lanzamiento en dólares, sin impuestos.
+      - name: launch_price_eur
+        description: Precio de lanzamiento en euros sin IVA (usd_to_eur).
+        data_tests: [not_null]
+      - name: data_source
+        description: Origen de las especificaciones.
+      - name: captured_at
+        description: Fecha en que se capturó la fila.
+      - name: loaded_at
+        description: Momento de la carga en Bronze.
+
+  - name: slv_catalogo__ram_kits
+    description: >
+      Una fila por kit de RAM del catálogo, con los valores convertidos a
+      número, la capacidad total, la latencia real y el precio en euros sin IVA.
+    columns:
+      - name: ram_kit_name
+        description: Nombre del kit.
+        data_tests: [unique, not_null]
+      - name: manufacturer
+        description: Fabricante.
+      - name: memory_type
+        description: Tipo de memoria.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['DDR4', 'DDR5']
+      - name: speed_mts
+        description: Velocidad en MT/s.
+        data_tests: [not_null]
+      - name: cas_latency
+        description: Latencia CAS (CL), en ciclos.
+        data_tests: [not_null]
+      - name: modules
+        description: Número de módulos del kit.
+        data_tests: [not_null]
+      - name: module_gb
+        description: Capacidad de cada módulo en GB.
+        data_tests: [not_null]
+      - name: voltage_v
+        description: Voltaje en voltios.
+        data_tests: [not_null]
+      - name: reference_price_usd
+        description: Precio de referencia en dólares, sin impuestos.
+      - name: reference_price_eur
+        description: Precio de referencia en euros sin IVA (usd_to_eur).
+        data_tests: [not_null]
+      - name: reference_price_date
+        description: Fecha del precio de referencia.
+      - name: total_gb
+        description: Capacidad total del kit en GB (módulos × GB por módulo).
+        data_tests: [not_null]
+      - name: latency_ns
+        description: >
+          Latencia real en nanosegundos (CL × 2000 / MT/s). Permite comparar
+          kits de distinta velocidad.
+      - name: data_source
+        description: Origen de los datos.
+      - name: captured_at
+        description: Fecha en que se capturó la fila.
+      - name: loaded_at
+        description: Momento de la carga en Bronze.
