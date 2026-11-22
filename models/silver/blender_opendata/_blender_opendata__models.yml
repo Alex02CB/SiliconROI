@@ -50,3 +50,72 @@ models:
         description: Snapshot del que procede la fila.
       - name: loaded_at
         description: Momento en que la fila llegó a Bronze.
+      - name: device_name
+        description: >
+          Nombre del dispositivo limpio para mostrar (macro clean_device_name):
+          sin (R), (TM), generación de Intel ni coletillas del sistema.
+        data_tests:
+          - not_null
+
+      - name: device_key
+        description: >
+          device_name en minúsculas: clave para cruzar con el catálogo y con el
+          seed mapeo_dispositivos_blender.
+        data_tests:
+          - not_null
+  - name: slv_blender_opendata__device_products
+    description: >
+      Cruce entre los dispositivos de Blender y los productos del catálogo, una
+      fila por pareja dispositivo + producto. Directo por nombre normalizado o
+      por las excepciones del seed mapeo_dispositivos_blender.
+    columns:
+      - name: device_product_id
+        description: Clave de la pareja, device_key + producto.
+        data_tests: [unique, not_null]
+      - name: device_key
+        description: Clave del dispositivo en Blender (clean_device_name, as_key=true).
+        data_tests: [not_null]
+      - name: product_name
+        description: Nombre exacto del producto en el catálogo.
+        data_tests: [not_null]
+      - name: device_kind
+        description: Tipo de componente.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['cpu', 'gpu']
+      - name: match_type
+        description: >
+          Cómo cruzó: directo (mismo nombre normalizado) o el motivo del seed
+          (variante_memoria, sin_graficos_integrados).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['directo', 'variante_memoria', 'sin_graficos_integrados']
+
+  - name: slv_blender_opendata__unmapped_devices
+    description: >
+      Cuarentena: dispositivos de Blender que no cruzan con el catálogo ni por
+      el seed. Documenta el hardware fuera de alcance y señala candidatos a
+      entrar en el catálogo.
+    columns:
+      - name: device_key
+        description: Clave del dispositivo en Blender.
+        data_tests: [unique, not_null]
+      - name: device_name
+        description: Nombre limpio para mostrar.
+      - name: device_types
+        description: Backends con los que aparece (CPU, OPTIX, HIP, METAL…).
+      - name: submissions
+        description: Envíos con este dispositivo.
+        data_tests: [not_null]
+      - name: first_seen_at
+        description: Primer envío con este dispositivo.
+      - name: last_seen_at
+        description: Último envío con este dispositivo.
+      - name: probable_reason
+        description: Clasificación aproximada por el nombre, para revisar la cuarentena.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['nombre_generico', 'apple', 'servidor_o_pro', 'portatil', 'fuera_de_catalogo']
