@@ -32,6 +32,8 @@ models:
         +schema: blender_opendata
       catalogo:
         +schema: catalogo
+      precios:
+        +schema: precios
 
     # Silver: limpieza, deduplicación y FLATTEN. Tablas: es trabajo caro y
     # no queremos repetirlo en cada consulta.
@@ -42,6 +44,8 @@ models:
         +schema: blender_opendata
       catalogo:
         +schema: catalogo
+      precios:
+        +schema: precios
 
     # Gold: consumo. int_ (apoyo), dim_ y fct_ (estrella), agg_ (marts).
     gold:
@@ -71,3 +75,16 @@ seeds:
 vars:
   # Tipo de cambio de referencia (1 USD = X EUR). Lo usa la macro usd_to_eur.
   usd_eur_rate: 0.86
+  # IVA general en España. Silver lo quita de los precios de tienda.
+  vat_rate: 0.21
+  # Primer día del histórico de precios: inicio del calendario (dim_date).
+  price_history_start: '2025-11-01'
+  # Versiones de Blender con las que se calculan las puntuaciones.
+  # No se mezclan versiones: cada una cambia el motor de render.
+  blender_reference_versions: ['4.5']
+  # Envíos mínimos para que la mediana de un producto sea fiable.
+  min_benchmark_samples: 10
+  # Escala de presupuestos del recomendador, en euros sin IVA.
+  budget_min: 800
+  budget_max: 5000
+  budget_step: 100

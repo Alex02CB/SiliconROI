@@ -1,0 +1,119 @@
+version: 2
+
+models:
+  - name: dim_products
+    description: >
+      CPUs, GPUs y kits de RAM en una sola dimensión (D-13). Cada tipo rellena
+      sus columnas (cpu_*, gpu_*, ram_*) y deja a null las de los demás.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['product_type', 'product_name']
+    columns:
+      - name: product_key
+        description: Clave sustituta (tipo + nombre).
+        data_tests: [unique, not_null]
+      - name: product_type
+        description: cpu, gpu o ram.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['cpu', 'gpu', 'ram']
+      - name: product_name
+        description: Nombre oficial del producto.
+        data_tests: [not_null]
+      - name: reference_price_eur
+        description: Precio de lanzamiento (CPU, GPU) o de referencia (RAM), en euros sin IVA.
+
+  - name: dim_stores
+    description: Tiendas de las que se registran precios (seed tiendas).
+    columns:
+      - name: store_key
+        description: Clave sustituta.
+        data_tests: [unique, not_null]
+      - name: store_name
+        description: Nombre de la tienda.
+        data_tests: [unique, not_null]
+
+  - name: dim_date
+    description: >
+      Calendario diario desde price_history_start hasta hoy, con el calendario
+      comercial español (season).
+    columns:
+      - name: date_day
+        description: Día.
+        data_tests: [unique, not_null]
+      - name: season
+        description: Temporada comercial.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['Black Friday', 'Rebajas de enero', 'Navidad', 'Verano', 'Temporada normal']
+
+  - name: fct_daily_prices
+    description: >
+      Hecho de precios (D-12): una fila por día, tienda y producto, sin IVA.
+    data_tests:
+      - dbt_utils.equal_rowcount:
+          arguments:
+            compare_model: ref('slv_precios__daily_prices')
+    columns:
+      - name: price_id
+        description: Clave única, día + tienda + producto.
+        data_tests: [unique, not_null]
+      - name: date_day
+        description: Día del precio.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: product_key
+        description: Producto.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: store_key
+        description: Tienda.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_stores')
+                field: store_key
+      - name: price_ex_vat_eur
+        description: Precio en euros sin IVA.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+
+  - name: fct_benchmark_results
+    description: >
+      Hecho de rendimiento: una fila por envío de Blender y producto, con la
+      puntuación del envío (suma de las tres escenas). Solo equipos de un
+      dispositivo y envíos completos. Todas las versiones y backends.
+    columns:
+      - name: benchmark_id
+        description: Clave única, envío + producto.
+        data_tests: [unique, not_null]
+      - name: product_key
+        description: Producto.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: device_type
+        description: Backend (CPU, OPTIX, HIP, ONEAPI, CUDA, METAL).
+      - name: blender_version_minor
+        description: Versión de Blender, mayor.menor (por ejemplo 4.5).
+      - name: score
+        description: Suma de samples por minuto de las tres escenas.
+        data_tests:
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: match_type
+        description: Cómo cruzó el dispositivo con el producto (directo o motivo del seed).

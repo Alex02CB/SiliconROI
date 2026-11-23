@@ -52,3 +52,89 @@ seeds:
           - accepted_values:
               arguments:
                 values: ['variante_memoria', 'sin_graficos_integrados']
+
+  - name: tiendas
+    description: >
+      Tiendas de las que se registran precios. Datos de referencia mantenidos a
+      mano. Los precios son simulados (D-11): los nombres de tiendas reales se
+      usan solo como referencia.
+    columns:
+      - name: store_name
+        description: Nombre de la tienda, tal como aparece en los precios.
+        data_tests: [unique, not_null]
+      - name: store_type
+        description: especialista (tienda de informática) o marketplace.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['especialista', 'marketplace']
+      - name: headquarters_country
+        description: País de la sede de la empresa.
+
+  - name: perfiles
+    description: >
+      Perfiles de cliente del recomendador (D-02): pesos de cada métrica de
+      rendimiento, mínimos de VRAM y RAM (D-04) y rendimiento objetivo, a
+      partir del cual el perfil no aprovecha más rendimiento. Reglas de
+      negocio en forma de datos.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "weight_cpu_multi + weight_cpu_single + weight_gpu = 1"
+    columns:
+      - name: profile_id
+        description: Identificador del perfil.
+        data_tests: [unique, not_null]
+      - name: profile_name
+        description: Nombre para mostrar.
+      - name: description
+        description: Programas y tareas típicas del perfil.
+      - name: weight_cpu_multi
+        description: Peso del rendimiento multihilo de la CPU (Blender CPU).
+      - name: weight_cpu_single
+        description: Peso del rendimiento monohilo de la CPU.
+      - name: weight_gpu
+        description: Peso del rendimiento de la GPU (Blender GPU).
+      - name: min_vram_gb
+        description: VRAM mínima de la GPU. Umbral, no puntúa.
+      - name: min_ram_gb
+        description: Capacidad mínima del kit de RAM. Umbral, no puntúa.
+      - name: allows_integrated_graphics
+        description: Si se puede recomendar un equipo sin GPU dedicada.
+      - name: target_score
+        description: >
+          Rendimiento objetivo del perfil (0-100). Por encima de él, más
+          rendimiento no aporta y el recomendador elige el equipo más barato
+          que lo alcanza. 100 = sin límite (cada punto cuenta). Oficina = 65,
+          el nivel de un Core i5 o Ryzen 5 actual, punto a partir del cual cada
+          punto extra se paga mucho más caro.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 100
+
+  - name: plataformas
+    description: >
+      Coste estimado del resto del equipo por plataforma (D-07): placa base,
+      fuente, caja y SSD, sin IVA. Se suma al precio de CPU, GPU y RAM.
+    columns:
+      - name: socket
+        description: Socket de la placa base.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_catalogo__cpus')
+                field: socket
+      - name: platform_cost_eur
+        description: Coste estimado en euros sin IVA.
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: description
+        description: Qué incluye el coste.

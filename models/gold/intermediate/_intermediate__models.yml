@@ -1,0 +1,85 @@
+version: 2
+
+models:
+  - name: int_product_performance
+    description: >
+      Puntuación de rendimiento de cada CPU y GPU: mediana de los envíos de
+      Blender en las versiones de referencia y con el backend principal de su
+      fabricante (D-21), con un mínimo de envíos (D-22). Índices de 0 a 100
+      dentro de cada tipo.
+    columns:
+      - name: product_key
+        description: Producto. Una sola fila por producto (un único backend).
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: product_type
+        description: cpu o gpu.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['cpu', 'gpu']
+      - name: backend
+        description: Backend de Blender con el que se mide (CPU, OPTIX, HIP, ONEAPI).
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['CPU', 'OPTIX', 'HIP', 'ONEAPI']
+      - name: benchmark_samples
+        description: Envíos usados para la mediana.
+        data_tests: [not_null]
+      - name: performance_index
+        description: Rendimiento relativo dentro de su tipo (el mejor = 100).
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+      - name: single_thread_index
+        description: Rendimiento monohilo relativo entre CPUs (el mejor = 100). Null en GPUs.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+  - name: int_current_prices
+    description: >
+      Mejor precio del último día cargado: tienda más barata con stock de cada
+      producto. Los productos sin stock en ninguna tienda no aparecen.
+    columns:
+      - name: product_key
+        description: Producto.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: best_store_key
+        description: Tienda con el precio más bajo.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_stores')
+                field: store_key
+      - name: best_price_ex_vat_eur
+        description: Precio más bajo, en euros sin IVA.
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: stores_in_stock
+        description: Número de tiendas con stock ese día.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 5
