@@ -69,3 +69,56 @@ seeds:
                 values: ['especialista', 'marketplace']
       - name: headquarters_country
         description: País de la sede de la empresa.
+
+  - name: perfiles
+    description: >
+      Perfiles de cliente del recomendador (D-02): pesos de cada métrica de
+      rendimiento y mínimos de VRAM y RAM (D-04). Reglas de negocio en forma de datos.
+    data_tests:
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "weight_cpu_multi + weight_cpu_single + weight_gpu = 1"
+    columns:
+      - name: profile_id
+        description: Identificador del perfil.
+        data_tests: [unique, not_null]
+      - name: profile_name
+        description: Nombre para mostrar.
+      - name: description
+        description: Programas y tareas típicas del perfil.
+      - name: weight_cpu_multi
+        description: Peso del rendimiento multihilo de la CPU (Blender CPU).
+      - name: weight_cpu_single
+        description: Peso del rendimiento monohilo de la CPU.
+      - name: weight_gpu
+        description: Peso del rendimiento de la GPU (Blender GPU).
+      - name: min_vram_gb
+        description: VRAM mínima de la GPU. Umbral, no puntúa.
+      - name: min_ram_gb
+        description: Capacidad mínima del kit de RAM. Umbral, no puntúa.
+      - name: allows_integrated_graphics
+        description: Si se puede recomendar un equipo sin GPU dedicada.
+
+  - name: plataformas
+    description: >
+      Coste estimado del resto del equipo por plataforma (D-07): placa base,
+      fuente, caja y SSD, sin IVA. Se suma al precio de CPU, GPU y RAM.
+    columns:
+      - name: socket
+        description: Socket de la placa base.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('slv_catalogo__cpus')
+                field: socket
+      - name: platform_cost_eur
+        description: Coste estimado en euros sin IVA.
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: description
+        description: Qué incluye el coste.
