@@ -15,6 +15,15 @@ snapshot-paths: ["snapshots"]
 clean-targets: ["target", "dbt_packages"]
 
 # =============================================================================
+# Hooks de proyecto
+# Al final de cada ejecución (dbt build, run, test, seed, snapshot), un
+# resumen en el log: entorno, nodos correctos y con error, y las filas que ha
+# procesado cada modelo incremental. En PRO aparece en el log de cada job.
+# =============================================================================
+on-run-end:
+  - "{{ log_run_summary(results) }}"
+
+# =============================================================================
 # Modelos · arquitectura Medallion
 # Cada capa escribe en su database, que llega por variable de entorno:
 # el mismo código sirve en DEV y en PRO. Bronze no aparece: dbt solo la
@@ -23,6 +32,9 @@ clean-targets: ["target", "dbt_packages"]
 models:
   siliconroi:
     +transient: false
+    # Gobierno: quién responde de cada modelo. Aparece en la documentación.
+    +meta:
+      owner: 'J. Alejandro Campillo'
 
     # Staging: renombrar y tipar, 1:1 con Bronze. Vistas: no ocupan espacio.
     staging:
@@ -58,6 +70,11 @@ models:
         +schema: core
       marts:
         +schema: marts
+        # Grants declarativos: el rol de consumo (landing) solo lee los marts.
+        # dbt los aplica en cada construcción. El rol se crea en
+        # setup/07_rol_reporting.sql.
+        +grants:
+          select: ['SILICONROI_REPORTING_ROLE']
 
 # =============================================================================
 # Seeds: a Silver, nunca a Bronze (Bronze solo la escribe la ingesta).
@@ -66,6 +83,21 @@ seeds:
   siliconroi:
     +database: "{{ env_var('DBT_SILVER_DB') }}"
     +schema: seeds
+    +meta:
+      owner: 'J. Alejandro Campillo'
+
+# =============================================================================
+# Snapshots (SCD tipo 2): historia del catálogo, en Silver.
+# No transitorios: con Fail-safe, porque su historia no se puede reconstruir
+# desde Bronze.
+# =============================================================================
+snapshots:
+  siliconroi:
+    +database: "{{ env_var('DBT_SILVER_DB') }}"
+    +schema: snapshots
+    +transient: false
+    +meta:
+      owner: 'J. Alejandro Campillo'
 
 
 # =============================================================================

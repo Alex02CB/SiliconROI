@@ -1,0 +1,48 @@
+version: 2
+
+# =============================================================================
+# Snapshots del catálogo (SCD tipo 2)
+# =============================================================================
+# Guardan la historia de cada producto del catálogo de Bronze: si se corrige
+# una especificación, un precio de referencia o la fuente del dato, la versión
+# anterior se cierra (dbt_valid_to) y se abre una nueva (dbt_valid_from).
+#   - strategy: check. El catálogo no tiene una columna fiable de última
+#     modificación: dbt compara las columnas de negocio.
+#   - check_cols: las columnas de negocio. No se comparan fecha_captura ni
+#     _loaded_at: cambian al recargar el fichero aunque el dato sea el mismo,
+#     y crearían versiones falsas.
+#   - hard_deletes: invalidate. Si un producto sale del catálogo, su versión
+#     se cierra; la historia se conserva.
+# =============================================================================
+
+snapshots:
+  - name: snp_catalogo__cpus
+    description: Historia de las CPUs del catálogo (una versión por cambio).
+    relation: source('catalogo', 'cpus')
+    config:
+      unique_key: cpu_nombre
+      strategy: check
+      check_cols: ['fabricante', 'familia', 'fecha_lanzamiento', 'nucleos', 'hilos',
+                   'frecuencia_base', 'frecuencia_boost', 'cache_l3', 'tdp', 'socket',
+                   'memoria_soportada', 'graficos_integrados', 'precio_lanzamiento_usd', 'fuente']
+      hard_deletes: invalidate
+
+  - name: snp_catalogo__gpus
+    description: Historia de las GPUs del catálogo (una versión por cambio).
+    relation: source('catalogo', 'gpus')
+    config:
+      unique_key: gpu_nombre
+      strategy: check
+      check_cols: ['fabricante', 'arquitectura', 'fecha_lanzamiento', 'memoria', 'bus_memoria',
+                   'ancho_banda', 'tdp', 'precio_lanzamiento_usd', 'fuente']
+      hard_deletes: invalidate
+
+  - name: snp_catalogo__ram_kits
+    description: Historia de los kits de RAM del catálogo (una versión por cambio).
+    relation: source('catalogo', 'ram_kits')
+    config:
+      unique_key: ram_kit_nombre
+      strategy: check
+      check_cols: ['fabricante', 'tipo', 'velocidad', 'latencia', 'configuracion', 'voltaje',
+                   'precio_referencia_usd', 'fecha_precio_referencia', 'fuente']
+      hard_deletes: invalidate
