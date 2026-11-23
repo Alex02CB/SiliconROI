@@ -21,6 +21,11 @@
 --      equipo más barato. Con objetivo 100 (sin límite) se elige el de más
 --      puntuación; con objetivo 65 (oficina) se elige el más barato que llega
 --      a 65, en lugar de gastar todo el presupuesto.
+--   8. Ampliación de RAM: con el dinero que sobra, se sube al kit compatible
+--      de más capacidad que quepa en el presupuesto, sin pasar del máximo útil
+--      del perfil (max_ram_gb). Primero rendimiento (CPU y GPU), después
+--      capacidad: la RAM no puntúa en el benchmark, pero permite trabajar con
+--      proyectos y modelos más grandes.
 -- Los presupuestos sin ningún equipo posible se conservan (has_solution = false).
 -- Importes sin IVA (D-06); se añaden los equivalentes con IVA para la landing.
 -- =============================================================================
@@ -211,7 +216,7 @@ builds as (
     from builds_scored
 ),
 
--- El mejor equipo de cada perfil que cabe en cada presupuesto
+-- El mejor equipo de cada perfil que cabe en cada presupuesto (con la RAM mínima)
 best_builds as (
     select
           b.budget_eur
@@ -225,14 +230,42 @@ best_builds as (
     ) = 1
 ),
 
--- Todos los perfiles × presupuestos, también los que no tienen solución
-final as (
+-- 8. Ampliación de RAM con el presupuesto sobrante: el kit compatible de más
+--    capacidad que quepa, sin pasar del máximo útil del perfil
+ram_upgrades as (
     select
-          pr.profile_id
-        , pr.profile_name
-        , b.budget_eur                                                                  as budget_ex_vat_eur
-        , round(b.budget_eur * (1 + {{ var('vat_rate') }}), 2)::number(10,2)            as budget_with_vat_eur
-        , bb.cpu_key is not null                                                        as has_solution
+          bb.profile_id
+        , bb.budget_eur
+        , r.ram_key
+        , r.ram_name
+        , r.ram_memory_type
+        , r.ram_total_gb
+        , r.ram_price_ex_vat_eur
+        , r.ram_store_name
+    from best_builds bb
+    inner join profiles pr
+        on bb.profile_id = pr.profile_id
+    inner join cpu_options c
+        on bb.cpu_key = c.cpu_key
+    inner join ram_options r
+        on  (
+                (r.ram_memory_type = 'DDR4' and c.cpu_supports_ddr4)
+             or (r.ram_memory_type = 'DDR5' and c.cpu_supports_ddr5)
+            )
+        and r.ram_total_gb >  bb.ram_total_gb
+        and r.ram_total_gb <= pr.max_ram_gb
+        and bb.total_price_ex_vat_eur - bb.ram_price_ex_vat_eur + r.ram_price_ex_vat_eur <= bb.budget_eur
+    qualify row_number() over (
+        partition by bb.profile_id, bb.budget_eur
+        order by r.ram_total_gb desc, r.ram_price_ex_vat_eur, r.ram_name
+    ) = 1
+),
+
+-- Equipo definitivo: la RAM ampliada si la hay; si no, la mínima
+final_builds as (
+    select
+          bb.budget_eur
+        , bb.profile_id
         , bb.cpu_key
         , bb.cpu_name
         , bb.cpu_socket
@@ -244,25 +277,64 @@ final as (
         , bb.is_integrated_graphics
         , bb.gpu_store_name
         , bb.gpu_price_ex_vat_eur
-        , bb.ram_key
-        , bb.ram_name
-        , bb.ram_memory_type
-        , bb.ram_total_gb
-        , bb.ram_store_name
-        , bb.ram_price_ex_vat_eur
+        , coalesce(u.ram_key, bb.ram_key)                           as ram_key
+        , coalesce(u.ram_name, bb.ram_name)                         as ram_name
+        , coalesce(u.ram_memory_type, bb.ram_memory_type)           as ram_memory_type
+        , coalesce(u.ram_total_gb, bb.ram_total_gb)                 as ram_total_gb
+        , coalesce(u.ram_store_name, bb.ram_store_name)             as ram_store_name
+        , coalesce(u.ram_price_ex_vat_eur, bb.ram_price_ex_vat_eur) as ram_price_ex_vat_eur
+        , u.ram_key is not null                                     as is_ram_upgraded
         , bb.platform_cost_eur
-        , bb.total_price_ex_vat_eur::number(10,2)                                       as total_price_ex_vat_eur
-        , round(bb.total_price_ex_vat_eur * (1 + {{ var('vat_rate') }}), 2)::number(10,2)
+        , bb.total_price_ex_vat_eur
+          - bb.ram_price_ex_vat_eur
+          + coalesce(u.ram_price_ex_vat_eur, bb.ram_price_ex_vat_eur) as total_price_ex_vat_eur
+        , bb.profile_score
+        , bb.effective_score
+    from best_builds bb
+    left join ram_upgrades u
+        on  bb.profile_id = u.profile_id
+        and bb.budget_eur = u.budget_eur
+),
+
+-- Todos los perfiles × presupuestos, también los que no tienen solución
+final as (
+    select
+          pr.profile_id
+        , pr.profile_name
+        , b.budget_eur                                                                  as budget_ex_vat_eur
+        , round(b.budget_eur * (1 + {{ var('vat_rate') }}), 2)::number(10,2)            as budget_with_vat_eur
+        , fb.cpu_key is not null                                                        as has_solution
+        , fb.cpu_key
+        , fb.cpu_name
+        , fb.cpu_socket
+        , fb.cpu_store_name
+        , fb.cpu_price_ex_vat_eur
+        , fb.gpu_key
+        , fb.gpu_name
+        , fb.gpu_vram_gb
+        , fb.is_integrated_graphics
+        , fb.gpu_store_name
+        , fb.gpu_price_ex_vat_eur
+        , fb.ram_key
+        , fb.ram_name
+        , fb.ram_memory_type
+        , fb.ram_total_gb
+        , fb.ram_store_name
+        , fb.ram_price_ex_vat_eur
+        , fb.is_ram_upgraded
+        , fb.platform_cost_eur
+        , fb.total_price_ex_vat_eur::number(10,2)                                       as total_price_ex_vat_eur
+        , round(fb.total_price_ex_vat_eur * (1 + {{ var('vat_rate') }}), 2)::number(10,2)
                                                                                         as total_price_with_vat_eur
-        , (b.budget_eur - bb.total_price_ex_vat_eur)::number(10,2)                      as budget_left_eur
-        , round(bb.profile_score, 2)::number(5,2)                                       as profile_score
+        , (b.budget_eur - fb.total_price_ex_vat_eur)::number(10,2)                      as budget_left_eur
+        , round(fb.profile_score, 2)::number(5,2)                                       as profile_score
         , pr.target_score
-        , round(bb.effective_score, 2)::number(5,2)                                     as effective_score
+        , round(fb.effective_score, 2)::number(5,2)                                     as effective_score
     from profiles pr
     cross join budgets b
-    left join best_builds bb
-        on  bb.profile_id = pr.profile_id
-        and bb.budget_eur = b.budget_eur
+    left join final_builds fb
+        on  fb.profile_id = pr.profile_id
+        and fb.budget_eur = b.budget_eur
 )
 
 select * from final

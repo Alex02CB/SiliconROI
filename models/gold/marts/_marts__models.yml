@@ -71,6 +71,7 @@ models:
       Caso de uso 2. Mejor equipo (CPU + GPU + RAM + plataforma) para cada
       perfil y presupuesto, con los precios de hoy. Una fila por perfil y
       presupuesto; los presupuestos sin equipo posible tienen has_solution = false.
+      Con el presupuesto sobrante se amplía la RAM hasta el máximo útil del perfil.
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -97,6 +98,17 @@ models:
               arguments:
                 to: ref('dim_products')
                 field: product_key
+      - name: ram_key
+        description: Kit de RAM recomendado.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: is_ram_upgraded
+        description: >
+          True si la RAM se ha ampliado por encima del mínimo del perfil con el
+          presupuesto sobrante. Null en los presupuestos sin solución.
       - name: profile_score
         description: Puntuación del equipo para el perfil (0-100).
         data_tests:
