@@ -3,15 +3,17 @@ version: 2
 sources:
   - name: blender_opendata
     description: >
-      Benchmarks de render de Blender Open Data (licencia CC0). Snapshot diario
-      en JSONL cargado en Bronze sin transformar: una fila por línea del fichero.
+      Benchmarks de render de Blender Open Data (licencia CC0). Snapshot
+      descargado una vez y cargado en Bronze sin transformar (D-09): una fila
+      por línea del fichero JSONL. No se actualiza cada día.
     database: "{{ env_var('DBT_BRONZE_DB') }}"
     schema: blender_opendata
     config:
       loaded_at_field: _loaded_at
-      freshness:
-        warn_after: {count: 24, period: hour}
-        error_after: {count: 48, period: hour}
+      # Sin control de frescura: es un snapshot estático y siempre
+      # parecería antiguo. Si se programan recargas periódicas, se vuelve a
+      # activar con umbrales acordes a esa frecuencia (por ejemplo, semanal).
+      freshness: null
 
     tables:
       - name: submissions
