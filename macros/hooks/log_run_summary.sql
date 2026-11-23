@@ -7,14 +7,16 @@ ejecución escribe en el log un resumen:
   - entorno (DBT_ENVIRONMENT),
   - modelos, seeds, snapshots y tests correctos,
   - avisos, errores y nodos omitidos (por depender de uno que falló),
-  - filas procesadas por cada modelo incremental en esta ejecución.
+  - filas totales de cada modelo incremental al terminar (día a día se ve
+    cuánto crece: +580 precios por noche).
 
 results: la lista de resultados que dbt pasa a on-run-end (un elemento por
-nodo ejecutado, con su estado, su nodo y la respuesta de Snowflake).
+nodo ejecutado, con su estado y su nodo).
 
-Las filas salen de adapter_response.rows_affected. Si Snowflake no las
-devuelve, se escribe "n/d" en lugar de fallar: el resumen nunca rompe un job.
-No devuelve SQL: solo escribe en el log.
+Las filas se cuentan con un count(*) sobre la tabla. No se usa
+adapter_response.rows_affected: en dbt Fusion devuelve 0 en los merge
+incrementales aunque inserten filas (comprobado en PRO el 23/11: 0 frente a
++580 precios reales). No devuelve SQL: solo escribe en el log.
 =============================================================================
 #}
 
@@ -52,14 +54,15 @@ No devuelve SQL: solo escribe en el log.
         {{ log('  Avisos:        ' ~ c.avisos, info=True) }}
         {{ log('  Errores:       ' ~ c.errores, info=True) }}
         {{ log('  Omitidos:      ' ~ c.omitidos, info=True) }}
-        {{ log('  Incrementales (filas procesadas en esta ejecución):', info=True) }}
+        {{ log('  Incrementales (filas totales al terminar):', info=True) }}
 
         {%- for r in results -%}
             {%- if (r.node.resource_type | string | lower) == 'model'
-                   and r.node.config.materialized == 'incremental' -%}
-                {%- set respuesta = r.adapter_response -%}
-                {%- set filas = respuesta.get('rows_affected') if respuesta is mapping else none -%}
-                {{ log('    · ' ~ r.node.name ~ ': ' ~ (filas if filas is not none else 'n/d'), info=True) }}
+                   and r.node.config.materialized == 'incremental'
+                   and (r.status | string | lower) == 'success' -%}
+                {%- set tabla = r.node.database ~ '.' ~ r.node.schema ~ '.' ~ (r.node.alias or r.node.name) -%}
+                {%- set conteo = run_query('select count(*) from ' ~ tabla) -%}
+                {{ log('    · ' ~ r.node.name ~ ': ' ~ conteo.columns[0].values()[0], info=True) }}
             {%- endif -%}
         {%- endfor -%}
 
