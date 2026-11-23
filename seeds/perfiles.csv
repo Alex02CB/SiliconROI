@@ -1,6 +1,6 @@
-profile_id,profile_name,description,weight_cpu_multi,weight_cpu_single,weight_gpu,min_vram_gb,min_ram_gb,allows_integrated_graphics
-arquitectura_bim,Arquitectura / BIM,"Revit, ArchiCAD, SketchUp: modelado y visualización en tiempo real",0.25,0.45,0.30,8,32,false
-render_3d,Render 3D,"Blender, 3ds Max, Cinema 4D: render por GPU",0.15,0.05,0.80,12,32,false
-edicion_video,Edición de vídeo,"Premiere, DaVinci Resolve: exportación y efectos",0.45,0.15,0.40,8,32,false
-ia_local,IA local,Modelos de lenguaje e imagen en local: la VRAM decide qué modelo cabe,0.10,0.10,0.80,16,32,false
-oficina_desarrollo,Oficina / desarrollo,"Ofimática, navegación y programación",0.30,0.70,0.00,0,16,true
+profile_id,profile_name,description,weight_cpu_multi,weight_cpu_single,weight_gpu,min_vram_gb,min_ram_gb,allows_integrated_graphics,target_score
+arquitectura_bim,Arquitectura / BIM,"Revit, ArchiCAD, SketchUp: modelado y visualización en tiempo real",0.25,0.45,0.30,8,32,false,100
+render_3d,Render 3D,"Blender, 3ds Max, Cinema 4D: render por GPU",0.15,0.05,0.80,12,32,false,100
+edicion_video,Edición de vídeo,"Premiere, DaVinci Resolve: exportación y efectos",0.45,0.15,0.40,8,32,false,100
+ia_local,IA local,Modelos de lenguaje e imagen en local: la VRAM decide qué modelo cabe,0.10,0.10,0.80,16,32,false,100
+oficina_desarrollo,Oficina / desarrollo,"Ofimática, navegación y programación",0.30,0.70,0.00,0,16,true,65

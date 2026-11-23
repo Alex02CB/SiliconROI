@@ -66,6 +66,45 @@ models:
                 min_value: 0
                 max_value: 100
 
+  - name: agg_profile_recommendations
+    description: >
+      Caso de uso 2. Mejor equipo (CPU + GPU + RAM + plataforma) para cada
+      perfil y presupuesto, con los precios de hoy. Una fila por perfil y
+      presupuesto; los presupuestos sin equipo posible tienen has_solution = false.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['profile_id', 'budget_ex_vat_eur']
+    columns:
+      - name: profile_id
+        description: Perfil de uso.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('perfiles')
+                field: profile_id
+      - name: budget_ex_vat_eur
+        description: Presupuesto en euros sin IVA.
+        data_tests: [not_null]
+      - name: has_solution
+        description: True si existe algún equipo que cumple el perfil dentro del presupuesto.
+        data_tests: [not_null]
+      - name: cpu_key
+        description: CPU recomendada.
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: profile_score
+        description: Puntuación del equipo para el perfil (0-100).
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+
 unit_tests:
   - name: test_rendimiento_por_euro
     description: >

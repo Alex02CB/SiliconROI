@@ -52,6 +52,7 @@ seeds:
           - accepted_values:
               arguments:
                 values: ['variante_memoria', 'sin_graficos_integrados']
+
   - name: tiendas
     description: >
       Tiendas de las que se registran precios. Datos de referencia mantenidos a
@@ -73,7 +74,9 @@ seeds:
   - name: perfiles
     description: >
       Perfiles de cliente del recomendador (D-02): pesos de cada métrica de
-      rendimiento y mínimos de VRAM y RAM (D-04). Reglas de negocio en forma de datos.
+      rendimiento, mínimos de VRAM y RAM (D-04) y rendimiento objetivo, a
+      partir del cual el perfil no aprovecha más rendimiento. Reglas de
+      negocio en forma de datos.
     data_tests:
       - dbt_utils.expression_is_true:
           arguments:
@@ -98,6 +101,19 @@ seeds:
         description: Capacidad mínima del kit de RAM. Umbral, no puntúa.
       - name: allows_integrated_graphics
         description: Si se puede recomendar un equipo sin GPU dedicada.
+      - name: target_score
+        description: >
+          Rendimiento objetivo del perfil (0-100). Por encima de él, más
+          rendimiento no aporta y el recomendador elige el equipo más barato
+          que lo alcanza. 100 = sin límite (cada punto cuenta). Oficina = 65,
+          el nivel de un Core i5 o Ryzen 5 actual, punto a partir del cual cada
+          punto extra se paga mucho más caro.
+        data_tests:
+          - not_null
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 1
+                max_value: 100
 
   - name: plataformas
     description: >
