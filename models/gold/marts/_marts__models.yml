@@ -1,0 +1,99 @@
+version: 2
+
+models:
+  - name: agg_value_ranking
+    description: >
+      Caso de uso 1. Rendimiento por euro de cada CPU y GPU con puntuación
+      fiable y stock hoy: puntos de rendimiento por cada 100 € sin IVA y
+      posición dentro de su tipo.
+    columns:
+      - name: product_key
+        description: Producto.
+        data_tests:
+          - unique
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: product_type
+        description: cpu o gpu.
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['cpu', 'gpu']
+      - name: performance_per_100_eur
+        description: Puntos de rendimiento (índice 0-100) por cada 100 € sin IVA.
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: value_rank
+        description: Posición dentro de su tipo (1 = mejor relación rendimiento/precio).
+        data_tests: [not_null]
+
+  - name: agg_price_evolution
+    description: >
+      Caso de uso 3. Evolución mensual del precio de cada producto (todas las
+      tiendas): medio, mínimo, máximo, volatilidad, variación frente al mes
+      anterior y mes más barato del histórico.
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns: ['product_key', 'year_month']
+    columns:
+      - name: product_key
+        description: Producto.
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_products')
+                field: product_key
+      - name: avg_price_ex_vat_eur
+        description: Precio medio del mes, en euros sin IVA.
+        data_tests:
+          - not_null
+          - dbt_utils.expression_is_true:
+              arguments:
+                expression: "> 0"
+      - name: in_stock_pct
+        description: Porcentaje de precios del mes con stock.
+        data_tests:
+          - dbt_utils.accepted_range:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+unit_tests:
+  - name: test_rendimiento_por_euro
+    description: >
+      Comprueba el cálculo de rendimiento por cada 100 € y que el ranking se
+      hace por separado para CPUs y GPUs. Datos inventados, no reales:
+        GPU A: índice 50, 500 € -> 10 puntos por 100 € -> puesto 2 de las GPUs
+        GPU B: índice 30, 200 € -> 15 puntos por 100 € -> puesto 1 de las GPUs
+        CPU C: índice 40, 400 € -> 10 puntos por 100 € -> puesto 1 de las CPUs
+               monohilo 80, 400 € -> 20 puntos por 100 €
+    model: agg_value_ranking
+    given:
+      - input: ref('int_product_performance')
+        rows:
+          - {product_key: 'a', product_type: 'gpu', product_name: 'GPU A', performance_index: 50.0, single_thread_index: null}
+          - {product_key: 'b', product_type: 'gpu', product_name: 'GPU B', performance_index: 30.0, single_thread_index: null}
+          - {product_key: 'c', product_type: 'cpu', product_name: 'CPU C', performance_index: 40.0, single_thread_index: 80.0}
+      - input: ref('int_current_prices')
+        rows:
+          - {product_key: 'a', best_price_ex_vat_eur: 500.00}
+          - {product_key: 'b', best_price_ex_vat_eur: 200.00}
+          - {product_key: 'c', best_price_ex_vat_eur: 400.00}
+      - input: ref('dim_products')
+        rows:
+          - {product_key: 'a'}
+          - {product_key: 'b'}
+          - {product_key: 'c'}
+    expect:
+      rows:
+        - {product_key: 'a', performance_per_100_eur: 10.00, single_thread_per_100_eur: null, value_rank: 2}
+        - {product_key: 'b', performance_per_100_eur: 15.00, single_thread_per_100_eur: null, value_rank: 1}
+        - {product_key: 'c', performance_per_100_eur: 10.00, single_thread_per_100_eur: 20.00, value_rank: 1}
