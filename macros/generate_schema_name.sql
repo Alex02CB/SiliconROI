@@ -1,26 +1,31 @@
 {#
     generate_schema_name
     ---------------------------------------------------------------------------
-    Sustituye la regla por defecto de dbt para nombrar los schemas.
+    Decide el nombre del schema de cada modelo según el entorno:
 
-    Por defecto: schema del entorno + "_" + schema del modelo
-                 (DBT_ACAMPILLO_BLENDER_OPENDATA).
-    Con esta macro: solo el schema del modelo (BLENDER_OPENDATA).
+      DEV  ->  schema del desarrollador + "_" + schema del modelo
+               (DBT_ACAMPILLO_CATALOGO). Cada desarrollador tiene sus propias
+               tablas: dos personas trabajando a la vez no se pisan.
+      PRO  ->  solo el schema del modelo (CATALOGO). En PRO solo escribe el
+               job, así que el prefijo no aporta nada y los nombres quedan
+               limpios para quien consulta el almacén.
 
-    Por qué: cada entorno tiene sus propias databases (SILICONROI_DEV_*,
-    SILICONROI_PRO_*), así que el prefijo no hace falta para separarlos, y en
-    PRO los schemas quedan con nombres limpios: SILICONROI_PRO_SILVER_DB.CATALOGO.
-
-    Riesgo que asumimos (Día 04): sin prefijo, dos desarrolladores que
-    compartieran la database de DEV pisarían las mismas tablas. En este
-    proyecto las databases de DEV son de un solo desarrollador.
+    El entorno llega por la variable DBT_ENVIRONMENT (dev / pro), definida en
+    cada entorno de dbt Platform. Si falta, se trata como DEV: en el peor caso
+    PRO tendría nombres con prefijo, que se ve enseguida y no pisa nada.
 
     Si un modelo no tiene schema propio, usa el del entorno (target.schema).
 #}
 {% macro generate_schema_name(custom_schema_name, node) -%}
+
+    {%- set entorno = env_var('DBT_ENVIRONMENT', 'dev') | trim | lower -%}
+
     {%- if custom_schema_name is none -%}
         {{ target.schema }}
-    {%- else -%}
+    {%- elif entorno == 'pro' -%}
         {{ custom_schema_name | trim }}
+    {%- else -%}
+        {{ target.schema }}_{{ custom_schema_name | trim }}
     {%- endif -%}
+
 {%- endmacro %}
