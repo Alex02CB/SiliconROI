@@ -74,13 +74,16 @@ seeds:
   - name: perfiles
     description: >
       Perfiles de cliente del recomendador (D-02): pesos de cada métrica de
-      rendimiento, mínimos de VRAM y RAM (D-04) y rendimiento objetivo, a
-      partir del cual el perfil no aprovecha más rendimiento. Reglas de
-      negocio en forma de datos.
+      rendimiento, mínimos de VRAM y RAM (D-04), máximo útil de RAM y
+      rendimiento objetivo, a partir del cual el perfil no aprovecha más
+      rendimiento. Reglas de negocio en forma de datos.
     data_tests:
       - dbt_utils.expression_is_true:
           arguments:
             expression: "weight_cpu_multi + weight_cpu_single + weight_gpu = 1"
+      - dbt_utils.expression_is_true:
+          arguments:
+            expression: "max_ram_gb >= min_ram_gb"
     columns:
       - name: profile_id
         description: Identificador del perfil.
@@ -99,6 +102,13 @@ seeds:
         description: VRAM mínima de la GPU. Umbral, no puntúa.
       - name: min_ram_gb
         description: Capacidad mínima del kit de RAM. Umbral, no puntúa.
+      - name: max_ram_gb
+        description: >
+          Capacidad máxima útil de RAM. Con el presupuesto que sobra tras elegir
+          CPU y GPU, el recomendador amplía la RAM hasta este valor. IA local
+          llega a 128 GB (modelos grandes que no caben en la VRAM); oficina, a 32 GB.
+        data_tests:
+          - not_null
       - name: allows_integrated_graphics
         description: Si se puede recomendar un equipo sin GPU dedicada.
       - name: target_score
